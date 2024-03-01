@@ -1,13 +1,43 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstring>
+using namespace std;
 
-#include <stdio.h>
-int main ()
+int main()
 {
-  FILE * pFile;
-  pFile = fopen ("in.txt","r");
-  if (pFile!=NULL)
-  {
-    fputs ("fopen example",pFile);
-    fclose (pFile);
-  }
-  return 0;
+    FILE *intrare;
+    intrare=fopen("in.txt", "r");
+
+    long long rezultat =0;
+    char s[101];
+    while (true)
+    {
+
+
+        fgets(s, 100, intrare);
+        int numar=0,p=1;
+        for(int i=int(strlen(s))-2;i>=0;i--)
+        {
+            if((int)s[i]>47&&(int)s[i]<58)
+            {numar+=(s[i]-'0')*p;
+            p*=10;}
+            else
+            {
+                numar=0;
+                 break;
+            }
+
+        }
+
+        rezultat+=numar;
+ if(feof(intrare))
+        {
+            rezultat-=numar;
+             break;
+        }
+
+    }
+    printf("%d" ,rezultat);
+
 }
