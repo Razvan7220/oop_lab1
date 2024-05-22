@@ -1,157 +1,199 @@
 #include <iostream>
+#include<algorithm>
+using namespace std;
 
-
-template <typename T>
-struct Node
-{
-    T value;
-    Node<T>** children;
-    unsigned int nrChildren;
-
-    Node() : value(), children(nullptr), nrChildren(0) {}
-};
-
-template <class T>
-class Tree
+template <typename K, typename V>
+class Map
 {
 private:
-    Node<T>* root;
-    unsigned int maxChildrenPerNode;
-
-    void deleteNodeAndChildren(Node<T>* node)
+    struct pereche
     {
-        if (node == nullptr)
-            return;
+        K Key;
+        V Value;
+    };
 
-        for (unsigned int i = 0; i < node->nrChildren; ++i)
-            deleteNodeAndChildren(node->children[i]);
-
-        delete[] node->children;
-        delete node;
-    }
-
-
-    Node<T>* findHelper(Node<T>* parent, T value, int (*compare)(T, T))
-    {
-        if (parent == nullptr)
-            return nullptr;
-
-        if (compare(parent->value, value) == 0)
-            return parent;
-
-        for (unsigned int i = 0; i < parent->nrChildren; ++i)
-        {
-            Node<T>* found = findHelper(parent->children[i], value, compare);
-            if (found != nullptr)
-                return found;
-        }
-        return nullptr;
-    }
-
-    void insertAtIndex(Node<T>* parent, T value, unsigned int index)
-    {
-        if (parent == nullptr)
-            return;
-
-
-        for (unsigned int i = parent->nrChildren; i > index; --i)
-            parent->children[i] = parent->children[i - 1];
-
-
-        parent->children[index] = new Node<T>;
-        parent->children[index]->value = value;
-        parent->children[index]->nrChildren = 0;
-        parent->children[index]->children = new Node<T>*[maxChildrenPerNode] {};
-
-        parent->nrChildren++;
-    }
+    int count = 0;
+    int nrElemente = 1000;
+    pereche* map;
 
 public:
-    Tree(unsigned int nrChildren) : root(nullptr), maxChildrenPerNode(nrChildren) {}
+    Map() : map(new pereche[nrElemente]) {}
 
-    ~Tree()
+    ~Map()
     {
-        deleteNodeAndChildren(root);
+        delete[] map;
     }
 
-    Node<T>* add_node(Node<T>* parent, T value)
+    V& operator[](const K& Key)
     {
-        Node<T>* newNode = new Node<T>;
-        newNode->value = value;
-        newNode->nrChildren = 0;
-        newNode->children = new Node<T>*[maxChildrenPerNode] {};
-        if (parent == nullptr)
-            root = newNode;
-
-        else
-            parent->children[parent->nrChildren++] = newNode;
-
-        return newNode;
+        return Set(Key, V{});
     }
 
-
-    Node<T>* get_node(Node<T>* parent)
+    V& Set(const K& Key, const V& Value)
     {
-        return parent == nullptr ? root : parent;
-    }
-
-    void delete_node(Node<T>* node)
-    {
-        if (node == nullptr)
-            return;
-        deleteNodeAndChildren(node);
-    }
-
-    Node<T>* find(T value, int (*compare)(T, T))
-    {
-        return findHelper(root, value, compare);
-    }
-
-    void insert(Node<T>* parent, T value, unsigned int index)
-    {
-        insertAtIndex(parent, value, index);
-    }
-
-    void sort(Node<T>* parent, int (*comparatie)(T, T) = nullptr)
-    {
-        if (parent == nullptr)
-            return;
-        if (comparatie == nullptr)
-            comparatie = [](T a, T b) { return a < b ? -1 : (a > b ? 1 : 0); };
-
-        for (unsigned int i = 0; i < parent->nrChildren - 1; ++i)
+        for (int i = 0; i < count; i++)
         {
-            for (unsigned int j = i + 1; j < parent->nrChildren; ++j)
+            if (map[i].Key == Key)
             {
-                if (comparatie(parent->children[i]->value, parent->children[j]->value) > 0)
-                    std::swap(parent->children[i], parent->children[j]);
-
+                map[i].Value = Value;
+                return map[i].Value;
             }
         }
+
+        if (count >= nrElemente)
+        {
+            cout << "Map size exceeded";
+        }
+
+        map[count].Key = Key;
+        map[count].Value = Value;
+        return map[count++].Value;
     }
 
-    void printNodes(Node<T>* parent)
+    bool Get(const K& key, V& value)
     {
-        if (parent == nullptr)
-            return;
-
-        std::cout << parent->value << " ";
-
-        for (unsigned int i = 0; i < parent->nrChildren; ++i)
-            printNodes(parent->children[i]);
-
+        for (int i = 0; i < count; i++)
+        {
+            if (map[i].Key == key)
+            {
+                value = map[i].Value;
+                return true;
+            }
+        }
+        return false;
     }
 
-    unsigned int count(Node<T>* parent = nullptr)
+    bool Includes(const Map<K, V>& other)
     {
-        if (parent == nullptr)
-            parent = root;
+        for (int i = 0; i < other.count; i++)
+        {
+            bool found = false;
+            for (int j = 0; j < count; j++)
+                if (map[j].Key == other.map[i].Key)
+                {
+                    found = true;
+                    break;
+                }
 
-        unsigned int totalCount = parent->nrChildren;
-        for (unsigned int i = 0; i < parent->nrChildren; ++i)
-            totalCount += count(parent->children[i]);
-
-        return totalCount;
+            if (!found)
+                return false;
+        }
+        return true;
     }
 
+    void Clear()
+    {
+        delete[] map;
+        map = new pereche[nrElemente];
+        count = 0;
+    }
+
+    int Count()
+    {
+        return count;
+    }
+
+    bool Delete(const K& key)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (map[i].Key == key)
+            {
+                for (int j = i; j < count - 1; j++)
+                    map[j] = map[j + 1];//shiftam
+
+                count--;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    class iterator
+    {
+    private:
+        pereche* ptr;
+        int index;
+
+    public:
+        iterator(pereche* p, int idx = 0) : ptr(p), index(idx) {}
+
+        iterator& operator++()
+        {
+            ++ptr;
+            ++index;
+            return *this;
+        }
+
+        bool operator!=(const iterator& other)
+        {
+            return ptr != other.ptr;
+        }
+
+        auto operator*()
+        {
+            return make_tuple(ptr->Key, ptr->Value, index);
+        }
+    };
+
+    iterator begin()
+    {
+        return iterator(&map[0], 0);
+    }
+
+    iterator end()
+    {
+        return iterator(&map[count], count);
+    }
 };
+
+
+int main()
+{
+    Map<int, const char*> m;
+    m[10] = "C++";
+    m[20] = "test";
+    m[30] = "Poo";
+    //for(iterator i=m.begin();i!=m.end();i++)
+    //auto key=(*i).key
+    //auto value=(*i).value
+    //auto index=(*i).index
+    for (auto [key, value, index] : m)
+    {
+        printf("Index:%d, Key=%d, Value=%s\n", index, key, value);
+    }
+    m[20] = "result";
+    for (auto [key, value, index] : m)
+    {
+        printf("Index:%d, Key=%d, Value=%s\n", index, key, value);
+    }
+
+    m.Clear();
+    cout << '\n';
+    m.Set(11, "ce faci");
+    m.Set(12, "bine");
+    const char* r;
+    m.Get(11, r);
+    m.Delete(11);
+    cout << r << '\n';
+    for (auto [key, value, index] : m)
+    {
+        printf("Index:%d, Key=%d, Value=%s\n", index, key, value);
+    }
+
+
+    Map<int, const char*>m1; Map<int, const char*>m2;
+    m1[10] = "C++";
+    m1[20] = "test";
+    m1[30] = "Poo";
+    m1[40] = "SO";
+    m1[50] = "PA";
+
+    m2[10] = "gcc";
+    m2[20] = "g++";
+    m2[31] = "cl";
+    cout << m1.Includes(m2);
+
+
+    return 0;
+}
